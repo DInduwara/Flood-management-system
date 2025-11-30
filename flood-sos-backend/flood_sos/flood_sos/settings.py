@@ -38,8 +38,8 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
 
-    "rest_framework",  # new
-    "sos",             # our app (we’ll add models next)
+    "rest_framework",
+    "sos",
 ]
 
 
@@ -74,22 +74,21 @@ TEMPLATES = [
 WSGI_APPLICATION = 'flood_sos.wsgi.application'
 
 
-# DATABASES = {
-#     "default": {
-#         "ENGINE": "djongo",
-#         "NAME": "flood_sos_db",      # exactly the DB name you created in Compass
-#         "ENFORCE_SCHEMA": False,
-#         "CLIENT": {
-#             "host": "mongodb://localhost:27017",
-#         },
-#     }
-# }
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+        "ENGINE": "django.db.backends.mysql",
+        "NAME": "flood_sos_db",
+        "USER": "flooduser",
+        "PASSWORD": "StrongPassword123!",
+        "HOST": "localhost",
+        "PORT": "3306",
+        "OPTIONS": {
+            "charset": "utf8mb4",
+            "init_command": "SET sql_mode='STRICT_TRANS_TABLES'",
+        },
     }
 }
+
 
 
 

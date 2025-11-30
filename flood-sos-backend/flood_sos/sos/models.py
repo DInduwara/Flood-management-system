@@ -32,7 +32,7 @@ class SosRequest(models.Model):
     need_power = models.BooleanField(default=False)
     need_water = models.BooleanField(default=False)
     
-    phone_battery_percentage= models.IntegerField(max_length=8, blank=True, null=True)
+    phone_battery_percentage= models.PositiveIntegerField(blank=True, null=True)
     
     #Emergency details
     EMERGENCY_TYPE_CHOICES = [
@@ -44,7 +44,7 @@ class SosRequest(models.Model):
         ("other", "Other"),
     ]
     emergency_type= models.CharField(max_length=32, choices=EMERGENCY_TYPE_CHOICES, blank=True)
-    number_of_people= models.IntegerField(default=1)
+    number_of_people= models.PositiveIntegerField(default=1)
     
     has_children = models.BooleanField(default=False)
     has_elderly = models.BooleanField(default=False)
@@ -88,8 +88,8 @@ class ReliefCamp(models.Model):
     name = models.CharField(max_length=255)
     district = models.CharField(max_length=100)
     location_description = models.CharField(max_length=255)
-    capacity = models.IntegerField()
-    current_occupancy = models.IntegerField()
+    capacity = models.PositiveIntegerField()
+    current_occupancy = models.PositiveIntegerField()
     
     # simple comma-separated needs (we can normalise later)
     needs = models.TextField(

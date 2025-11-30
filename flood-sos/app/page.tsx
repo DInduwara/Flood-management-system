@@ -1,3 +1,4 @@
+// app/page.tsx
 "use client";
 
 import React, { useState } from "react";
@@ -9,30 +10,25 @@ import {
   SelectInput,
   PillCheckbox,
 } from "@/component/inputs";
-import { SosFormData } from "@/types/sos";
+import type { SosFormData } from "@/lib/api";
+import { submitSosRequest } from "@/lib/api";
 
 const EMPTY_FORM: SosFormData = {
   fullName: "",
   phoneNumber: "",
   alternatePhone: "",
-
   address: "",
   landmark: "",
   district: "",
   gpsLocation: null,
-
   waterLevel: "",
   safeHours: "",
-  buildingType: "",
   floorLevel: "",
   additionalInfo: "",
-
   needsFood: false,
   needsWater: false,
   needsPower: false,
-
   phoneBatteryPercent: "",
-
   emergencyType: "",
   numberOfPeople: "1",
   hasChildren: false,
@@ -54,7 +50,7 @@ export default function HomePage() {
     setForm((prev) => ({ ...prev, [key]: value }));
   }
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setSuccessMsg(null);
     setErrorMsg(null);
@@ -64,18 +60,20 @@ export default function HomePage() {
       return;
     }
 
-    // UI-only: no backend yet
     try {
       setLoading(true);
-      // eslint-disable-next-line no-console
-      console.log("SOS payload (will go to Django later):", form);
-      await new Promise((r) => setTimeout(r, 800));
+      await submitSosRequest(form);
       setSuccessMsg(
-        "Your emergency request is captured (demo). Backend to be added."
+        "Your emergency request has been sent to the coordination system."
       );
       setForm(EMPTY_FORM);
-    } catch {
-      setErrorMsg("Something went wrong in demo submit.");
+    } catch (err) {
+      console.error(err);
+      setErrorMsg(
+        err instanceof Error
+          ? `Failed to send request: ${err.message}`
+          : "Failed to send request. Please try again."
+      );
     } finally {
       setLoading(false);
     }
@@ -97,8 +95,7 @@ export default function HomePage() {
               Flood &amp; Landslide Rescue – Sri Lanka
             </p>
             <p className="mt-2 text-xs text-red-100">
-              Example (UI only): Colombo – Major flood, Gampaha – Minor flood,
-              Kegalle – Landslide alert.
+              Data will be shared with verified responders and admin dashboards.
             </p>
 
             <div className="mt-3 flex flex-wrap gap-2">
@@ -131,7 +128,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Big action buttons -> navigation */}
+      {/* Big action buttons */}
       <div className="space-y-3">
         <Link
           href="/help"
@@ -152,7 +149,7 @@ export default function HomePage() {
 
       {/* Form */}
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Contact Information */}
+        {/* Contact Info */}
         <SectionCard
           title="Your Contact Information"
           icon={<span className="text-lg">👤</span>}
@@ -216,7 +213,7 @@ export default function HomePage() {
                       update("gpsLocation", value);
                     },
                     () => {
-                      // ignore error in UI demo
+                      // ignore error for now
                     }
                   );
                 }}
@@ -256,13 +253,12 @@ export default function HomePage() {
                 <option value="colombo">Colombo</option>
                 <option value="gampaha">Gampaha</option>
                 <option value="kalutara">Kalutara</option>
-                {/* TODO: add all districts */}
               </SelectInput>
             </div>
 
             <p className="mt-1 text-[11px] text-slate-500">
-              Your location will be shared only with verified rescue teams and
-              authorities.
+              Your location will be visible only to verified rescue and admin
+              teams.
             </p>
           </div>
         </SectionCard>
@@ -278,7 +274,7 @@ export default function HomePage() {
               label="Water Level"
               value={form.waterLevel}
               onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
-                update("waterLevel", e.target.value as typeof form.waterLevel)
+                update("waterLevel", e.target.value)
               }
             >
               <option value="">Select</option>
@@ -291,18 +287,10 @@ export default function HomePage() {
             </SelectInput>
             <TextInput
               label="Safe for (hours)"
-              placeholder="How long?"
+              placeholder="How long can you stay safely?"
               value={form.safeHours}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                 update("safeHours", e.target.value)
-              }
-            />
-            <TextInput
-              label="Building Type"
-              placeholder="House, Apartment, etc."
-              value={form.buildingType}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                update("buildingType", e.target.value)
               }
             />
             <TextInput
@@ -367,10 +355,7 @@ export default function HomePage() {
               label="Emergency Type"
               value={form.emergencyType}
               onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
-                update(
-                  "emergencyType",
-                  e.target.value as typeof form.emergencyType
-                )
+                update("emergencyType", e.target.value)
               }
             >
               <option value="">Select</option>
@@ -435,15 +420,13 @@ export default function HomePage() {
         >
           <span>⚠️</span>
           <span>
-            {loading
-              ? "Sending Emergency Request..."
-              : "SEND EMERGENCY REQUEST"}
+            {loading ? "Sending Emergency Request..." : "SEND EMERGENCY REQUEST"}
           </span>
         </button>
 
         <p className="text-[11px] text-slate-500 text-center">
-          Your request will be sent to verified rescue teams and authorities
-          (once backend is connected).
+          Your request will be sent to the disaster management backend and made
+          available to admin / responder dashboards.
         </p>
       </form>
     </div>

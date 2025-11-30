@@ -5,6 +5,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { SectionCard } from "@/component/SectionCard";
 import { TextInput, TextArea, SelectInput } from "@/component/inputs";
+import { submitHelpOffer } from "@/lib/api";
 
 interface ReliefCamp {
   id: string;
@@ -16,6 +17,7 @@ interface ReliefCamp {
   needs: string[];
 }
 
+// still mock for now – later we can load from /api/relief-camps/
 const MOCK_CAMPS: ReliefCamp[] = [
   {
     id: "camp-1",
@@ -48,6 +50,9 @@ const MOCK_CAMPS: ReliefCamp[] = [
 
 export default function HelpPage() {
   const [selectedDistrict, setSelectedDistrict] = useState<string>("");
+  const [submitting, setSubmitting] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const filteredCamps = selectedDistrict
     ? MOCK_CAMPS.filter(
@@ -55,24 +60,48 @@ export default function HelpPage() {
       )
     : MOCK_CAMPS;
 
-  const [submitting, setSubmitting] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
-
   async function handleOfferHelp(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setSubmitting(true);
     setMessage(null);
+    setError(null);
 
-    // UI-only: later we send this to Django backend
     const formData = new FormData(e.currentTarget);
-    // eslint-disable-next-line no-console
-    console.log("Offer help payload (demo):", Object.fromEntries(formData));
+    const helperName = (formData.get("helperName") || "").toString();
+    const helperPhone = (formData.get("helperPhone") || "").toString();
+    const helperDistrict = (formData.get("helperDistrict") || "").toString();
+    const supportDetails = (formData.get("supportDetails") || "").toString();
+    const preferredAreas = (formData.get("preferredAreas") || "").toString();
 
-    await new Promise((r) => setTimeout(r, 800));
-    setMessage("Thank you for your support. Your offer has been recorded (demo).");
+    if (!helperName || !helperPhone || !helperDistrict || !supportDetails) {
+      setError("Please fill in all required fields.");
+      setSubmitting(false);
+      return;
+    }
 
-    e.currentTarget.reset();
-    setSubmitting(false);
+    try {
+      await submitHelpOffer({
+        helperName,
+        helperPhone,
+        helperDistrict,
+        supportDetails,
+        preferredAreas,
+      });
+
+      setMessage(
+        "Thank you for your support. Your offer has been recorded and will be used by coordinators."
+      );
+      e.currentTarget.reset();
+    } catch (err) {
+      console.error(err);
+      setError(
+        err instanceof Error
+          ? `Failed to submit offer: ${err.message}`
+          : "Failed to submit offer. Please try again."
+      );
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -91,10 +120,9 @@ export default function HelpPage() {
       </div>
 
       <p className="text-xs text-slate-600">
-        This page is for people and organisations who can provide help:
-        food, water, transport, medical support, temporary shelter, etc.
-        Everything is UI-only for now; later it will connect to the Django
-        backend and official coordination teams.
+        This page is for people and organisations who can provide help: food,
+        water, transport, medical support, temporary shelter, etc. Your offers
+        will be saved in the backend and later matched with camps / families.
       </p>
 
       {/* Layout: camps list + offer form */}
@@ -107,7 +135,7 @@ export default function HelpPage() {
         >
           <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
             <p className="text-xs text-slate-600">
-              These are sample relief camps. Filter by district for demo.
+              These are sample relief camps. Later we can load from the backend.
             </p>
             <SelectInput
               label="District filter"
@@ -190,16 +218,11 @@ export default function HelpPage() {
                 placeholder="07X XXX XXXX"
               />
             </div>
-            <SelectInput
-              label="District"
-              name="helperDistrict"
-              required
-            >
+            <SelectInput label="District" name="helperDistrict" required>
               <option value="">Select district</option>
               <option value="colombo">Colombo</option>
               <option value="gampaha">Gampaha</option>
               <option value="kegalle">Kegalle</option>
-              {/* TODO: add all districts */}
             </SelectInput>
             <TextArea
               label="What can you provide?"
@@ -213,6 +236,11 @@ export default function HelpPage() {
               placeholder="If you prefer specific districts, camps, or GN divisions, mention them here."
             />
 
+            {error && (
+              <p className="text-xs text-red-600 bg-red-50 border border-red-100 rounded-xl px-3 py-2">
+                {error}
+              </p>
+            )}
             {message && (
               <p className="text-xs text-green-700 bg-green-50 border border-green-100 rounded-xl px-3 py-2">
                 {message}
